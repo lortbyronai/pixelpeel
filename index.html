@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PixelPeel — Quita fondos sin salir de tu navegador</title>
+  <meta name="description" content="Eliminador de fondos profesional que corre 100% en tu navegador. Tus imágenes nunca se suben a ningún servidor.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='13' height='13' rx='3' fill='%235fe07c'/%3E%3Crect x='17' y='2' width='13' height='13' rx='3' fill='%232c2f39'/%3E%3Crect x='2' y='17' width='13' height='13' rx='3' fill='%232c2f39'/%3E%3Crect x='17' y='17' width='13' height='13' rx='3' fill='%235fe07c' opacity='.35'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="2" y="2" width="13" height="13" rx="3.5" class="mk-a"/>
+        <rect x="17" y="2" width="13" height="13" rx="3.5" class="mk-b"/>
+        <rect x="2" y="17" width="13" height="13" rx="3.5" class="mk-b"/>
+        <path d="M17 20.5 Q17 17 20.5 17 H26.5 Q30 17 30 20.5 V26.5 Q30 30 26.5 30 H20.5 Q17 30 17 26.5 Z M17 30 L30 17" class="mk-peel"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">PixelPeel</span>
+        <span class="brand-tag">Recorte profesional · 100% en tu navegador</span>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="chip chip-privacy" title="Verificado: la app solo descarga el modelo. Ninguna imagen se transmite.">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5 3 3.5v3.6c0 3.2 2.1 5.6 5 6.9 2.9-1.3 5-3.7 5-6.9V3.5L8 1.5z" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M5.6 7.8l1.7 1.7 3-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Tus imágenes no salen de este equipo
+      </div>
+      <div class="chip chip-model" id="modelChip" data-state="loading">
+        <span class="model-dot" id="modelDot"></span>
+        <span class="model-label" id="modelLabel">Preparando modelo…</span>
+        <span class="model-bar"><span class="model-bar-fill" id="modelBarFill"></span></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- ============ RAIL IZQUIERDO: COLA DE IMÁGENES ============ -->
+    <aside class="rail">
+      <div class="rail-head">
+        <h2>Imágenes</h2>
+        <button class="btn btn-small" id="btnAdd" type="button">＋ Añadir</button>
+      </div>
+      <ul class="queue" id="queueList"></ul>
+      <div class="rail-empty" id="railEmpty">
+        <p>Todavía no hay imágenes.<br>Arrástralas, pégalas (Ctrl+V) o pulsa <em>Añadir</em>.</p>
+      </div>
+      <div class="rail-foot">
+        <button class="btn btn-block" id="btnZipAll" type="button" disabled>Descargar todas (.zip)</button>
+      </div>
+    </aside>
+
+    <!-- ============ CENTRO: ESCENARIO DE EDICIÓN ============ -->
+    <section class="stage-wrap">
+      <div class="toolbar" id="toolbar">
+        <div class="tool-group">
+          <button class="tool is-active" id="toolPan" data-tool="pan" title="Mover / desplazar (V)" type="button">
+            <svg viewBox="0 0 20 20"><path d="M10 3v14M3 10h14M10 3l-2.5 2.5M10 3l2.5 2.5M10 17l-2.5-2.5M10 17l2.5-2.5M3 10l2.5-2.5M3 10l2.5 2.5M17 10l-2.5-2.5M17 10l-2.5 2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>
+            <span>Mover</span>
+          </button>
+          <button class="tool tool-keep" id="toolRestore" data-tool="restore" title="Pincel: restaurar zonas borradas por la IA (B)" type="button" disabled>
+            <svg viewBox="0 0 20 20"><path d="M13.5 3.5l3 3L8 15l-4 1 1-4 8.5-8.5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+            <span>Restaurar</span>
+          </button>
+          <button class="tool tool-cut" id="toolErase" data-tool="erase" title="Pincel: borrar restos de fondo (E)" type="button" disabled>
+            <svg viewBox="0 0 20 20"><path d="M8.5 15.5H16M3.8 12.2l7.4-7.4a1.5 1.5 0 012.1 0l2 2a1.5 1.5 0 010 2.1l-6.4 6.4H5.8l-2-2a1.5 1.5 0 010-2.1z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+            <span>Borrar</span>
+          </button>
+        </div>
+
+        <div class="tool-group brush-group" id="brushGroup">
+          <label for="brushRange">Pincel</label>
+          <input type="range" id="brushRange" min="4" max="300" value="60" disabled>
+          <output class="mono" id="brushOut">60px</output>
+        </div>
+
+        <div class="tool-group">
+          <button class="tool" id="btnUndo" title="Deshacer (Ctrl+Z)" type="button" disabled>
+            <svg viewBox="0 0 20 20"><path d="M7.5 4.5L4 8l3.5 3.5M4 8h8a4 4 0 010 8h-2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="tool" id="btnRedo" title="Rehacer (Ctrl+Shift+Z)" type="button" disabled>
+            <svg viewBox="0 0 20 20"><path d="M12.5 4.5L16 8l-3.5 3.5M16 8H8a4 4 0 000 8h2" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div class="tool-group tool-group-right">
+          <button class="tool" id="toolCompare" title="Comparar antes / después (C)" type="button" disabled>
+            <svg viewBox="0 0 20 20"><path d="M10 2v16M3 5h4v10H3zM13 5h4v10h-4z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+            <span>Comparar</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="stage-transform" id="stageTransform" style="display:none">
+          <div class="canvas-stack checker" id="canvasStack"></div>
+        </div>
+
+        <div class="compare-divider" id="compareDivider" hidden>
+          <span class="divider-grip">⇔</span>
+        </div>
+
+        <div class="brush-cursor" id="brushCursor" hidden></div>
+
+        <div class="empty-state" id="emptyState">
+          <svg class="peel-illo" viewBox="0 0 180 140" aria-hidden="true">
+            <defs>
+              <pattern id="chk" width="16" height="16" patternUnits="userSpaceOnUse">
+                <rect width="16" height="16" fill="#22242b"/>
+                <rect width="8" height="8" fill="#2c2f39"/>
+                <rect x="8" y="8" width="8" height="8" fill="#2c2f39"/>
+              </pattern>
+              <linearGradient id="photo" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#3c4250"/>
+                <stop offset="1" stop-color="#262a34"/>
+              </linearGradient>
+            </defs>
+            <rect x="20" y="14" width="140" height="112" rx="12" fill="url(#chk)" stroke="#3a3e49"/>
+            <path d="M32 14 h116 a12 12 0 0 1 12 12 v88 L96 126 H32 a12 12 0 0 1 -12 -12 V26 a12 12 0 0 1 12 -12 Z" fill="url(#photo)"/>
+            <circle cx="62" cy="52" r="13" fill="#5fe07c" opacity=".85"/>
+            <path d="M34 104 L70 70 L96 92 L122 62 L146 84" stroke="#5fe07c" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+            <path d="M160 114 L96 126 Q118 122 126 108 Q134 94 160 114 Z" fill="#5fe07c"/>
+            <path d="M96 126 Q118 122 126 108" stroke="#49b862" stroke-width="2" fill="none"/>
+          </svg>
+          <h1>Suelta tus imágenes aquí</h1>
+          <p>o <button class="linklike" id="btnPick" type="button">elígelas desde tu equipo</button> · también puedes pegarlas con <kbd>Ctrl+V</kbd></p>
+          <p class="hint">JPG · PNG · WebP — se procesan a resolución original, sin subir nada a internet.</p>
+        </div>
+
+        <div class="stage-status" id="stageStatus" hidden>
+          <span class="spinner"></span>
+          <span id="stageStatusText">Recortando…</span>
+        </div>
+
+        <div class="drop-hint" id="dropHint" hidden>Suelta para añadir</div>
+      </div>
+
+      <div class="stage-foot">
+        <span class="mono" id="imgInfo"></span>
+        <span class="mono" id="editHint"></span>
+        <div class="zoom-controls">
+          <button class="tool" id="zoomOut" title="Alejar (−)" type="button">−</button>
+          <button class="tool mono" id="zoomFit" title="Ajustar a la vista (0)" type="button">Ajustar</button>
+          <span class="mono zoom-label" id="zoomLabel">100%</span>
+          <button class="tool" id="zoomIn" title="Acercar (+)" type="button">＋</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DERECHA: INSPECTOR ============ -->
+    <aside class="inspector">
+
+      <section class="panel">
+        <h3>Fondo</h3>
+        <div class="chip-row" id="bgChips">
+          <button class="pick is-active" data-bg="transparent" type="button">Transparente</button>
+          <button class="pick" data-bg="color" type="button">Color</button>
+          <button class="pick" data-bg="gradient" type="button">Degradado</button>
+          <button class="pick" data-bg="image" type="button">Imagen</button>
+        </div>
+        <div class="control-row" id="bgColorRow" hidden>
+          <label for="bgColor">Color</label>
+          <input type="color" id="bgColor" value="#ffffff">
+        </div>
+        <div class="control-col" id="bgGradientRow" hidden>
+          <div class="control-row">
+            <label for="gradA">Colores</label>
+            <span class="color-pair">
+              <input type="color" id="gradA" value="#3b82f6">
+              <input type="color" id="gradB" value="#9333ea">
+            </span>
+          </div>
+          <div class="control-row">
+            <label for="gradAngle">Ángulo</label>
+            <input type="range" id="gradAngle" min="0" max="360" value="135">
+            <output class="mono" id="gradAngleOut">135°</output>
+          </div>
+        </div>
+        <div class="control-row" id="bgImageRow" hidden>
+          <button class="btn btn-small" id="btnBgImage" type="button">Elegir imagen…</button>
+          <span class="filelabel" id="bgImageName">ninguna</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Bordes</h3>
+        <div class="control-row">
+          <label for="featherRange">Suavizado</label>
+          <input type="range" id="featherRange" min="0" max="12" step="0.5" value="0">
+          <output class="mono" id="featherOut">0px</output>
+        </div>
+        <p class="panel-note">Difumina el borde del recorte. Útil para retratos y pelo.</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h3>Sombra</h3>
+          <label class="switch">
+            <input type="checkbox" id="shadowToggle">
+            <span class="switch-track"></span>
+          </label>
+        </div>
+        <div class="control-col" id="shadowControls" hidden>
+          <div class="control-row">
+            <label for="shBlur">Difusión</label>
+            <input type="range" id="shBlur" min="0" max="80" value="26">
+          </div>
+          <div class="control-row">
+            <label for="shDy">Distancia</label>
+            <input type="range" id="shDy" min="-60" max="60" value="18">
+          </div>
+          <div class="control-row">
+            <label for="shDx">Lateral</label>
+            <input type="range" id="shDx" min="-60" max="60" value="0">
+          </div>
+          <div class="control-row">
+            <label for="shOpacity">Opacidad</label>
+            <input type="range" id="shOpacity" min="0" max="100" value="45">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>Refinar</h3>
+        <p class="panel-note">Usa <strong class="k-keep">Restaurar</strong> para recuperar lo que la IA borró de más y <strong class="k-cut">Borrar</strong> para quitar restos de fondo. La imagen original nunca se degrada.</p>
+        <button class="btn btn-small" id="btnResetMask" type="button" disabled>Restablecer al recorte de la IA</button>
+      </section>
+
+      <section class="panel">
+        <h3>Exportar</h3>
+        <div class="chip-row" id="fmtChips">
+          <button class="pick is-active" data-fmt="png" type="button">PNG</button>
+          <button class="pick" data-fmt="webp" type="button">WebP</button>
+          <button class="pick" data-fmt="jpg" type="button">JPG</button>
+        </div>
+        <div class="control-row" id="qualityRow" hidden>
+          <label for="qualityRange">Calidad</label>
+          <input type="range" id="qualityRange" min="50" max="100" value="92">
+          <output class="mono" id="qualityOut">92</output>
+        </div>
+        <div class="btn-col">
+          <button class="btn btn-primary btn-block" id="btnDownload" type="button" disabled>Descargar imagen</button>
+          <button class="btn btn-block" id="btnCopy" type="button" disabled>Copiar al portapapeles</button>
+        </div>
+      </section>
+
+      <p class="legal">Modelo RMBG-1.4 © BRIA AI · uso no comercial. Para uso comercial se requiere licencia de BRIA (ver README).</p>
+    </aside>
+  </main>
+
+  <input type="file" id="fileInput" accept="image/*" multiple hidden>
+  <input type="file" id="bgImageInput" accept="image/*" hidden>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
