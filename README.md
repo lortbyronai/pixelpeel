@@ -120,6 +120,10 @@ The app code itself imposes no restrictions.
 - **Huge photos (>6000 px):** processed at full resolution, but memory usage grows quickly in large batches; the app warns you when adding them.
 - **Upgrading Transformers.js:** before bumping the version in `js/worker.js`, verify that `pipeline('image-segmentation', 'briaai/RMBG-1.4')` still returns the mask in the same shape (the defensive extraction in `worker.js` covers reasonable variations).
 
+## License
+
+The application code is released under the [MIT License](LICENSE). The default AI model (`briaai/RMBG-1.4`) is licensed separately — see the model license section above.
+
 ## Documentation (Spanish)
 
 - [README.es.md](README.es.md) — this README in Spanish
